@@ -1,0 +1,6 @@
+Flask
+flask_sqlalchemy
+pymysql
+gunicorn
+O365
+python-dotenv
