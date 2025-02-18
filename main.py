@@ -1,4 +1,3 @@
-# Imports 
 from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -6,19 +5,25 @@ from O365 import Account
 import json
 from config import client_id, client_secret
 from werkzeug.security import generate_password_hash, check_password_hash
-import jwt
-
-
-
+import os
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+# Use environment variables for security (or update with your actual credentials)
+DB_USER = os.environ.get('DB_USER', 'myuser')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'mypassword')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = os.environ.get('DB_PORT', '3306')
+DB_NAME = os.environ.get('DB_NAME', 'site_db')
+
+# Update the SQLALCHEMY_DATABASE_URI for MySQL
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://jp:Bowhunter16%21@edmonton33.mysql.database.azure.com:3306/site_db'
 db = SQLAlchemy(app)
 
 # Microsoft OAuth Credentials
 credentials = (client_id, client_secret)
-scopes = ['Mail.ReadWrite', 'Mail.Send','email']
+scopes = ['Mail.ReadWrite', 'Mail.Send', 'email', 'user']
 
 # Simple in-memory database for OAuth flows
 class MyDB:
@@ -68,9 +73,11 @@ def index():
 def admin():
     profiles = Profile.query.all()  # Retrieve all profiles from the database
     return render_template('adminlogin.html', profiles=profiles)
+
 @app.route('/profile')
 def profileview():
-    return render_template('profile. html')
+    return render_template('profile.html')
+
 @app.route('/loginadmin', methods=['GET', 'POST'])
 def loginadmin():
     if request.method == 'POST':
@@ -133,7 +140,6 @@ def ap():
     return render_template('adminpage.html', profiles=profiles)
 
 # Microsoft OAuth Step One
-
 @app.route('/stepone')
 def auth_step_one():
     # Create a callback URL for the next step, replacing '127.0.0.1' with 'localhost'
@@ -160,16 +166,14 @@ def auth_step_two_callback():
     requested_url = request.url  # Get current URL with auth code
     result = account.con.request_token(requested_url, flow=my_saved_flow)
 
-  
     if result:
-           
         return redirect('/')
 
     return "Authentication failed", 400
 
 # Add a new profile
 @app.route('/add', methods=["POST"])
-def profile():
+def add_profile():
     first_name = request.form.get("first_name")
     pass_word = request.form.get("pass_word")
 
@@ -208,5 +212,5 @@ def erase(id):
 
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()  
+        db.create_all()  # This will create the tables in your MySQL database
     app.run(debug=True)
